@@ -4,6 +4,19 @@ MAINTAINER Aselcis Consulting S.L. <info@aselcis.com>
 # Generate locale C.UTF-8 for postgres and general locale data
 ENV LANG C.UTF-8
 
+ENV B_LOG_VERSION 0.4.7
+ENV KM_UTILS_VERSION 0.4.7
+
+RUN mkdir /opt/stratio
+
+ADD http://sodio.stratio.com/repository/paas/kms_utils/${KM_UTILS_VERSION}/kms_utils-${KM_UTILS_VERSION}.sh /opt/stratio/kms_utils.sh
+ADD http://sodio.stratio.com/repository/paas/log_utils/${B_LOG_VERSION}/b-log-${B_LOG_VERSION}.sh /opt/stratio/b-log.sh
+ADD http://sodio.stratio.com/repository/paas/ansible/jq-linux64 /usr/sbin/jq
+
+RUN chmod ugo+x /opt/stratio/b-log.sh && \
+    chmod ugo+x /usr/sbin/jq && \
+    chmod ugo+x /opt/stratio/kms_utils.sh
+
 # Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
 RUN set -x; \
         apt-get update \
@@ -63,16 +76,33 @@ RUN set -x; \
 
 # Install python requirements.txt
 ADD ./requirements.txt /requirements.txt
-RUN pip3 install -r /requirements.txt 
+RUN pip3 install -r /requirements.txt
+
+# Override Odoo files
+COPY ./odoo/sql_db.py /usr/lib/python3/dist-packages/odoo/sql_db.py
+COPY ./odoo/config.py /usr/lib/python3/dist-packages/odoo/tools/config.py
 
 # Copy entrypoint script and Odoo configuration file
 COPY ./entrypoint.sh /
 COPY ./config/odoo.conf /etc/odoo/
-RUN chown odoo /etc/odoo/odoo.conf
+RUN chown odoo /etc/odoo/odoo.conf && \
+    chown odoo /opt/stratio/b-log.sh && \
+    chown odoo /opt/stratio/kms_utils.sh &&\
+    chown odoo /usr/sbin/jq &&\
+    chown -R odoo /usr/lib/python3/dist-packages/odoo
 
-# Mount /var/lib/odoo to allow restoring filestore and /mnt/extra-addons for users addons
-RUN mkdir -p /mnt/extra-addons \
-        && chown -R odoo /mnt/extra-addons
+RUN chown -R odoo /opt/stratio/
+
+COPY ./addons/Aselcis-Consulting/ /mnt/Aselcis-Consulting
+COPY ./addons/enterprise/ /mnt/enterprise
+COPY ./addons/extra-addons/ /mnt/extra-addons
+COPY ./addons/OCA/ /mnt/OCA
+
+RUN  chown -R odoo /mnt/extra-addons
+RUN  chown -R odoo /mnt/Aselcis-Consulting
+RUN  chown -R odoo /mnt/enterprise
+RUN  chown -R odoo /mnt/OCA
+
 VOLUME ["/var/lib/odoo", "/mnt/extra-addons"]
 
 # Expose Odoo services
@@ -82,8 +112,8 @@ EXPOSE 8069 8072
 ENV ODOO_RC /etc/odoo/odoo.conf
 
 # Set default user when running the container
+
 USER odoo
-
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["odoo"]
 
+CMD ["odoo"]

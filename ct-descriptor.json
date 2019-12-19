@@ -1,0 +1,363 @@
+{
+  "data": {
+    "serviceName": "apps-internas-pre",
+    "model": "odoo-pegaso-compatible",
+    "version": "0.5.1",
+    "description": "Docker with service for odoo service.",
+    "framework": false,
+    "highAvailability": false,
+    "healthChecks": {
+      "tcp": [],
+      "http": [],
+      "command": [],
+      "mesos": []
+    },
+    "networking": {
+      "expose": [
+        {
+          "portIndex": 0,
+          "vhost": "${haproxyHost}",
+          "path": "/",
+          "redirectHttpToHttps": false,
+          "sticky": false,
+          "external": true,
+          "schema": "http"
+        },
+        {
+          "portIndex": 0,
+          "schema": "http"
+        }
+      ],
+      "network": {
+        "networkType": "user",
+        "ports": [
+          {
+            "servicePort": 0,
+            "protocol": "tcp",
+            "name": "serviceapi",
+            "labels": {},
+            "containerPort": 8069,
+            "hostPort": 0
+          }
+        ],
+        "requirePorts": false
+      },
+      "admin": 0
+    },
+    "container": {
+      "runners": [
+        {
+          "typeClass": "com.stratio.tais.persistence.model.service.container.DockerRunner",
+          "image": "bootstrap.numa.hetzner.stratio.com:5000/stratio/odoo:0.0.1-SNAPSHOT",
+          "forcePullImage": true,
+          "privileged": false
+        }
+      ]
+    },
+    "secrets": {
+      "appRole": "role",
+      "secretRole": "${approlename}"
+    },
+    "acceptedResourceRoles": [
+      "*"
+    ],
+    "constraints": [
+      "hostname",
+      "UNIQUE"
+    ]
+  },
+  "parameters": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "general": {
+        "type": "object",
+        "additionalProperties": false,
+        "ui": null,
+        "name": "general",
+        "title": "General",
+        "description": "General",
+        "properties": {
+          "serviceId": {
+            "description": "Service ID",
+            "type": "string",
+            "required": true,
+            "readOnly": false,
+            "application": true,
+            "level": 1,
+            "internalName": "SERVICE_ID",
+            "title": "Service ID",
+            "default": "/apps-internas-pre/odoo"
+          },
+          "datasourceUrl": {
+            "description": "Postgresql url database",
+            "type": "string",
+            "readOnly": false,
+            "application": false,
+            "level": 1,
+            "internalName": "DATASOURCE_URL",
+            "title": "Datasource Postgres",
+            "default": "jdbc:postgresql://pg-0001.postgresapps.apps-internas-pre.mesos/odoo"
+          },
+          "databaseUser": {
+            "description": "Postgresql user database",
+            "type": "string",
+            "readOnly": false,
+            "application": false,
+            "level": 1,
+            "internalName": "POSTGRES_USERNAME",
+            "title": "Postgres Username",
+            "default": "odoo"
+          },
+          "databasePass": {
+            "description": "Postgresql password database",
+            "type": "string",
+            "readOnly": false,
+            "application": false,
+            "level": 1,
+            "internalName": "POSTGRES_PASSWORD",
+            "title": "Postgres password",
+            "default": "odoo"
+          },
+          "calico": {
+            "type": "object",
+            "additionalProperties": false,
+            "ui": {
+              "component": "standard"
+            },
+            "name": "calico",
+            "title": "Calico Network",
+            "description": "Use Calico security to this Sparta instance",
+            "properties": {
+              "calicoEnabled": {
+                "description": "Whether or not enable the Calico security.",
+                "type": "boolean",
+                "required": false,
+                "readOnly": true,
+                "application": false,
+                "level": 2,
+                "internalName": "CALICO_ENABLED",
+                "ui": {
+                  "updatable": false
+                },
+                "title": "Use calico",
+                "default": true
+              },
+              "networkName": {
+                "description": "Docker user network name",
+                "type": "string",
+                "required": true,
+                "readOnly": false,
+                "application": true,
+                "globalParameter": "globals.network",
+                "internalName": "NETWORK_NAME",
+                "ui": {
+                  "updatable": false
+                },
+                "title": "Network name",
+                "enum": [
+                  "numa",
+                  "numa1",
+                  "stratio"
+                ],
+                "default": "stratio"
+              },
+              "calicoNetwork": {
+                "description": "Name of the calico network where sparta and the workflows are deployed if calico security is enabled. It uses the same value of Network name.",
+                "type": "string",
+                "required": false,
+                "readOnly": false,
+                "application": false,
+                "level": 2,
+                "internalName": "CALICO_NETWORK",
+                "ui": {
+                  "updatable": false
+                },
+                "title": "Calico network",
+                "default": "${NETWORK_NAME}"
+              }
+            },
+            "required": [
+              "networkName"
+            ]
+          },
+          "resources": {
+            "type": "object",
+            "additionalProperties": false,
+            "ui": {
+              "component": "accordion"
+            },
+            "name": "resources",
+            "title": "Resources",
+            "description": "Resources used by the scheduler",
+            "properties": {
+              "CPUs": {
+                "description": "CPUs for the service",
+                "type": "number",
+                "required": true,
+                "readOnly": false,
+                "application": true,
+                "level": 1,
+                "internalName": "CPUs",
+                "title": "CPUs for the service",
+                "default": 1
+              },
+              "MEM": {
+                "description": "Memory for the service",
+                "type": "number",
+                "required": true,
+                "readOnly": false,
+                "application": true,
+                "level": 1,
+                "internalName": "MEM",
+                "title": "Memory for the service",
+                "default": 512
+              },
+              "INSTANCES": {
+                "description": "Instances for the service",
+                "type": "number",
+                "required": true,
+                "readOnly": false,
+                "application": true,
+                "level": 1,
+                "internalName": "INSTANCES",
+                "title": "Instances for the service",
+                "default": 1
+              },
+              "DISK": {
+                "description": "Disk for the service",
+                "type": "number",
+                "required": true,
+                "readOnly": false,
+                "application": true,
+                "level": 1,
+                "internalName": "DISK",
+                "title": "Disk for the service",
+                "default": 0
+              }
+            },
+            "required": [
+              "CPUs",
+              "MEM",
+              "INSTANCES",
+              "DISK"
+            ]
+          }
+        },
+        "required": [
+          "serviceId"
+        ]
+      },
+      "environment": {
+        "type": "object",
+        "additionalProperties": false,
+        "ui": null,
+        "name": "environment",
+        "title": "Environment",
+        "description": "Environment",
+        "properties": {
+          "vault": {
+            "type": "object",
+            "additionalProperties": false,
+            "ui": {
+              "component": "standard"
+            },
+            "name": "vault",
+            "title": "Vault",
+            "description": "",
+            "properties": {
+              "approlename": {
+                "description": "App role used to recover a Vault token with a pre-defined policy.",
+                "type": "string",
+                "required": true,
+                "readOnly": false,
+                "application": true,
+                "level": 1,
+                "globalParameter": "globals.vault.roles",
+                "internalName": "APPROLENAME",
+                "ui": {
+                  "updatable": true
+                },
+                "title": "Vault role",
+                "enum": [
+                  "open",
+                  "tais",
+                  "vault-bkp"
+                ],
+                "default": "open"
+              },
+              "marathonlb": {
+                "type": "object",
+                "additionalProperties": false,
+                "ui": null,
+                "name": "marathonlb",
+                "title": "Marathon LB",
+                "description": "Expose the service in Marathon LB, so the service can be accesed from outside the cluster",
+                "properties": {
+                  "marathonLbEnabled": {
+                    "description": "Enable external access to the service through Marathon LB",
+                    "type": "boolean",
+                    "required": true,
+                    "readOnly": true,
+                    "application": false,
+                    "level": 1,
+                    "internalName": "MARATHON_LB_ENABLED",
+                    "ui": {
+                      "updatable": false
+                    },
+                    "title": "Enable Marathon-LB",
+                    "default": true
+                  },
+                  "haproxyHost": {
+                    "description": "This is the external hostname exposed in MarathonLB and accesible by users",
+                    "type": "string",
+                    "required": true,
+                    "readOnly": false,
+                    "application": false,
+                    "level": 1,
+                    "internalName": "HAPROXY_HOST",
+                    "ui": {
+                      "updatable": false
+                    },
+                    "title": "MarathonLB Virtual Host",
+                    "default": "odoo.labs.stratio.com"
+                  }
+                },
+                "required": [
+                  "marathonLbEnabled",
+                  "haproxyHost"
+                ]
+              },
+              "vaultHost": {
+                "description": "Host where vault is configured.",
+                "type": "string",
+                "readOnly": true,
+                "application": false,
+                "level": 1,
+                "globalParameter": "globals.vault.vaultHost",
+                "internalName": "VAULT_HOST",
+                "title": "Host",
+                "default": "vault.service.eos.numa.hetzner.stratio.com"
+              },
+              "vaultPort": {
+                "description": "Port where vault is configured",
+                "type": "number",
+                "readOnly": true,
+                "application": false,
+                "level": 1,
+                "globalParameter": "globals.vault.vaultPort",
+                "internalName": "VAULT_PORT",
+                "title": "Port",
+                "default": 8200
+              }
+            },
+            "required": [
+              "approlename"
+            ]
+          }
+        },
+        "required": []
+      }
+    }
+  }
+}
